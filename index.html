@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Tic-Tac-Toe</title>
+    <style>
+        /* --- CSS VARIABLES & THEMES --- */
+        :root {
+            --bg-color: #f0f2f5;
+            --text-color: #333;
+            --board-bg: #ffffff;
+            --cell-bg: #e4e6eb;
+            --cell-hover: #d0d2d6;
+            --accent: #3b82f6;
+            --win-color: #10b981;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #18191a;
+            --text-color: #e4e6eb;
+            --board-bg: #242526;
+            --cell-bg: #3a3b3c;
+            --cell-hover: #4e4f50;
+            --accent: #60a5fa;
+            --win-color: #34d399;
+        }
+
+        [data-theme="neon"] {
+            --bg-color: #000000;
+            --text-color: #fff;
+            --board-bg: #111;
+            --cell-bg: #222;
+            --cell-hover: #333;
+            --accent: #ff00ff;
+            --win-color: #00ffff;
+            --shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+        }
+
+        [data-theme="nature"] {
+            --bg-color: #f1f8e9;
+            --text-color: #33691e;
+            --board-bg: #ffffff;
+            --cell-bg: #dcedc8;
+            --cell-hover: #c5e1a5;
+            --accent: #558b2f;
+            --win-color: #7cb342;
+        }
+
+        /* --- GLOBAL STYLES --- */
+        * { box-sizing: border-box; transition: background 0.3s, color 0.3s; }
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 { margin-top: 20px; font-size: 2.5rem; }
+
+        /* --- CONTROLS BAR --- */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--accent);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+            box-shadow: var(--shadow);
+        }
+
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        button.secondary { background-color: var(--cell-bg); color: var(--text-color); }
+
+        /* --- GAME STATUS --- */
+        #status {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            font-weight: bold;
+            height: 30px;
+        }
+
+        /* --- THE BOARD --- */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 10px;
+            background-color: var(--board-bg);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+        }
+
+        .cell {
+            background-color: var(--cell-bg);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .cell:hover:not(.taken) { background-color: var(--cell-hover); }
+        .cell.taken { cursor: default; }
+        .cell.win { background-color: var(--win-color); color: white; animation: pop 0.5s; }
+
+        @keyframes pop {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* --- SETTINGS MODAL --- */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-content {
+            background: var(--board-bg);
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow);
+            color: var(--text-color);
+        }
+        .setting-group { margin-bottom: 20px; }
+        .setting-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, input {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid var(--cell-hover);
+            width: 100%;
+            background: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        /* --- TUTORIAL OVERLAY --- */
+        .tutorial-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 200;
+            background: rgba(0,0,0,0.7);
+        }
+        .highlight {
+            position: relative;
+            z-index: 201;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.7); /* Focus spotlight */
+            background: var(--bg-color); 
+            border-radius: 8px;
+        }
+        .tooltip {
+            position: absolute;
+            background: white;
+            color: black;
+            padding: 15px;
+            border-radius: 8px;
+            width: 250px;
+            z-index: 202;
+            text-align: center;
+        }
+        .tooltip button { margin-top: 10px; font-size: 0.9rem; }
+
+        /* Mobile Adjustments */
+        @media (max-width: 400px) {
+            .board { grid-template-columns: repeat(3, 80px); grid-template-rows: repeat(3, 80px); }
+            .cell { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1 id="game-title">Tic-Tac-Toe</h1>
+
+    <div class="controls" id="controls-area">
+        <button onclick="restartGame()">Restart Game</button>
+        <button class="secondary" onclick="openSettings()">⚙️ Customize</button>
+        <button class="secondary" onclick="startTutorial()">❓ How to Play</button>
+    </div>
+
+    <div id="status">Player 1's Turn</div>
+
+    <div class="board" id="board">
+        <div class="cell" data-index="0"></div>
+        <div class="cell" data-index="1"></div>
+        <div class="cell" data-index="2"></div>
+        <div class="cell" data-index="3"></div>
+        <div class="cell" data-index="4"></div>
+        <div class="cell" data-index="5"></div>
+        <div class="cell" data-index="6"></div>
+        <div class="cell" data-index="7"></div>
+        <div class="cell" data-index="8"></div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <h2>Customization</h2>
+            
+            <div class="setting-group">
+                <label>Theme</label>
+                <select id="themeSelect" onchange="changeTheme()">
+                    <option value="light">Classic Light</option>
+                    <option value="dark">Dark Mode</option>
+                    <option value="neon">Neon Cyber</option>
+                    <option value="nature">Forest Calm</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label>Player 1 Avatar (X)</label>
+                <input type="text" id="p1Avatar" value="X" maxlength="2">
+            </div>
+
+            <div class="setting-group">
+                <label>Player 2 Avatar (O)</label>
+                <input type="text" id="p2Avatar" value="O" maxlength="2">
+            </div>
+
+            <button onclick="saveSettings()">Save & Close</button>
+        </div>
+    </div>
+
+    <div id="tutorialOverlay" class="tutorial-overlay">
+        <div id="tooltip" class="tooltip">
+            <p id="tooltipText">Welcome!</p>
+            <button onclick="nextTutorialStep()">Next</button>
+            <button class="secondary" onclick="endTutorial()" style="margin-left:5px">Skip</button>
+        </div>
+    </div>
+
+    <script>
+        // --- GAME STATE ---
+        let boardState = ["", "", "", "", "", "", "", "", ""];
+        let currentPlayer = 1;
+        let gameActive = true;
+        
+        let config = {
+            p1: "X",
+            p2: "O",
+            theme: "light"
+        };
+
+        // --- DOM ELEMENTS ---
+        const statusDisplay = document.getElementById('status');
+        const cells = document.querySelectorAll('.cell');
+        const modal = document.getElementById('settingsModal');
+
+        // --- GAME LOGIC ---
+        const winningConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+            [0, 4, 8], [2, 4, 6]             // Diagonals
+        ];
+
+        function handleCellClick(clickedCellEvent) {
+            const clickedCell = clickedCellEvent.target;
+            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
+
+            if (boardState[clickedCellIndex] !== "" || !gameActive) {
+                return;
+            }
+
+            handleCellPlayed(clickedCell, clickedCellIndex);
+            handleResultValidation();
+        }
+
+        function handleCellPlayed(clickedCell, clickedCellIndex) {
+            boardState[clickedCellIndex] = currentPlayer === 1 ? config.p1 : config.p2;
+            clickedCell.innerHTML = currentPlayer === 1 ? config.p1 : config.p2;
+            clickedCell.classList.add('taken');
+        }
+
+        function handleResultValidation() {
+            let roundWon = false;
+            let winningLine = [];
+
+            for (let i = 0; i < winningConditions.length; i++) {
+                const winCondition = winningConditions[i];
+                let a = boardState[winCondition[0]];
+                let b = boardState[winCondition[1]];
+                let c = boardState[winCondition[2]];
+
+                if (a === '' || b === '' || c === '') continue;
+                if (a === b && b === c) {
+                    roundWon = true;
+                    winningLine = winCondition;
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                statusDisplay.innerHTML = `🎉 Player ${currentPlayer} Wins!`;
+                gameActive = false;
+                highlightWin(winningLine);
+                return;
+            }
+
+            let roundDraw = !boardState.includes("");
+            if (roundDraw) {
+                statusDisplay.innerHTML = "It's a Draw! 🤝";
+                gameActive = false;
+                return;
+            }
+
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            statusDisplay.innerHTML = `Player ${currentPlayer}'s Turn (${currentPlayer === 1 ? config.p1 : config.p2})`;
+        }
+
+        function highlightWin(indices) {
+            indices.forEach(index => {
+                document.querySelector(`[data-index='${index}']`).classList.add('win');
+            });
+        }
+
+        function restartGame() {
+            gameActive = true;
+            currentPlayer = 1;
+            boardState = ["", "", "", "", "", "", "", "", ""];
+            statusDisplay.innerHTML = `Player 1's Turn (${config.p1})`;
+            cells.forEach(cell => {
+                cell.innerHTML = "";
+                cell.classList.remove('taken', 'win');
+            });
+        }
+
+        // --- CUSTOMIZATION LOGIC ---
+        function openSettings() { modal.style.display = 'flex'; }
+        
+        function changeTheme() {
+            const theme = document.getElementById('themeSelect').value;
+            document.body.setAttribute('data-theme', theme);
+        }
+
+        function saveSettings() {
+            config.p1 = document.getElementById('p1Avatar').value || "X";
+            config.p2 = document.getElementById('p2Avatar').value || "O";
+            config.theme = document.getElementById('themeSelect').value;
+            
+            modal.style.display = 'none';
+            restartGame(); // Restart to apply avatar changes
+        }
+
+        // Listeners
+        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+
+        // --- TUTORIAL LOGIC ---
+        let tutorialStep = 0;
+        const tutorialOverlay = document.getElementById('tutorialOverlay');
+        const tooltip = document.getElementById('tooltip');
+        const tooltipText = document.getElementById('tooltipText');
+
+        const tutorialSteps = [
+            { el: 'game-title', text: "Welcome to Tic-Tac-Toe! Let's learn how to play." },
+            { el: 'board', text: "This is the game board. Click a square to place your mark." },
+            { el: 'status', text: "This tells you whose turn it is or who won." },
+            { el: 'controls-area', text: "Use these buttons to Restart or Customize the game." }
+        ];
+
+        function startTutorial() {
+            tutorialStep = 0;
+            tutorialOverlay.style.display = 'block';
+            showStep();
+        }
+
+        function showStep() {
+            // Remove highlight from previous
+            document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+            
+            if (tutorialStep >= tutorialSteps.length) {
+                endTutorial();
+                return;
+            }
+
+            const step = tutorialSteps[tutorialStep];
+            const target = document.getElementById(step.el);
+            
+            target.classList.add('highlight');
+            
+            // Position Tooltip
+            const rect = target.getBoundingClientRect();
+            tooltip.style.top = (rect.bottom + 10) + "px";
+            tooltip.style.left = (rect.left + (rect.width/2) - 125) + "px"; // Center it
+            
+            // Mobile safe positioning
+            if(rect.bottom > window.innerHeight - 150) {
+                 tooltip.style.top = (rect.top - 120) + "px";
+            }
+            if(parseInt(tooltip.style.left) < 0) tooltip.style.left = "10px";
+
+            tooltipText.innerText = step.text;
+        }
+
+        function nextTutorialStep() {
+            tutorialStep++;
+            showStep();
+        }
+
+        function endTutorial() {
+            document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+            tutorialOverlay.style.display = 'none';
+        }
+
+    </script>
+</body>
+</html>
