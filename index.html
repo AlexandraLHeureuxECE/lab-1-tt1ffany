@@ -38,7 +38,6 @@
     <div id="settingsModal" class="modal">
         <div class="modal-content">
             <h2>Customization</h2>
-            
             <div class="setting-group">
                 <label>Theme</label>
                 <select id="themeSelect" onchange="changeTheme()">
@@ -48,17 +47,14 @@
                     <option value="nature">Forest Calm</option>
                 </select>
             </div>
-
             <div class="setting-group">
                 <label>Player 1 Avatar</label>
                 <div id="p1-avatar-grid" class="avatar-grid"></div>
             </div>
-
             <div class="setting-group">
                 <label>Player 2 Avatar</label>
                 <div id="p2-avatar-grid" class="avatar-grid"></div>
             </div>
-
             <button onclick="saveSettings()">Save & Close</button>
         </div>
     </div>
@@ -66,8 +62,10 @@
     <div id="tutorialOverlay" class="tutorial-overlay">
         <div id="tooltip" class="tooltip">
             <p id="tooltipText">Welcome!</p>
-            <button onclick="nextTutorialStep()">Next</button>
-            <button class="secondary" onclick="endTutorial()" style="margin-left:5px">Skip</button>
+            <div class="tutorial-btns">
+                <button onclick="nextTutorialStep()">Next</button>
+                <button class="secondary" onclick="endTutorial()">Close</button>
+            </div>
         </div>
     </div>
 

@@ -1,23 +1,11 @@
-/* --- GAME STATE --- */
+/* --- GAME STATE & CONFIG --- */
 let boardState = ["", "", "", "", "", "", "", "", ""];
 let currentPlayer = 1;
 let gameActive = true;
-
-// Default config
-let config = {
-    p1: "X",
-    p2: "O",
-    theme: "light"
-};
-
-// Available avatars for the menu
+let config = { p1: "X", p2: "O", theme: "light" };
 const availableAvatars = ["X", "O", "🐶", "🐱", "🚀", "⭐", "🔥", "💀"];
+let tempP1 = "X"; let tempP2 = "O";
 
-// Temporary state for the Settings Modal (so we don't save until user clicks Save)
-let tempP1 = "X";
-let tempP2 = "O";
-
-/* --- DOM ELEMENTS --- */
 const statusDisplay = document.getElementById('status');
 const cells = document.querySelectorAll('.cell');
 const modal = document.getElementById('settingsModal');
@@ -25,147 +13,68 @@ const p1Grid = document.getElementById('p1-avatar-grid');
 const p2Grid = document.getElementById('p2-avatar-grid');
 const confettiContainer = document.getElementById('confetti-container');
 
-/* --- WINNING LOGIC --- */
-const winningConditions = [
-    [0, 1, 2], [3, 4, 5], [6, 7, 8],
-    [0, 3, 6], [1, 4, 7], [2, 5, 8],
-    [0, 4, 8], [2, 4, 6]
-];
+const winningConditions = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 
-/* --- CORE GAME PLAY --- */
-function handleCellClick(clickedCellEvent) {
-    const clickedCell = clickedCellEvent.target;
-    const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
-
-    if (boardState[clickedCellIndex] !== "" || !gameActive) return;
-
-    handleCellPlayed(clickedCell, clickedCellIndex);
+/* --- GAMEPLAY --- */
+function handleCellClick(e) {
+    const idx = parseInt(e.target.getAttribute('data-index'));
+    if (boardState[idx] !== "" || !gameActive) return;
+    boardState[idx] = currentPlayer === 1 ? config.p1 : config.p2;
+    e.target.innerHTML = boardState[idx];
+    e.target.classList.add('taken');
     handleResultValidation();
-}
-
-function handleCellPlayed(clickedCell, clickedCellIndex) {
-    boardState[clickedCellIndex] = currentPlayer === 1 ? config.p1 : config.p2;
-    clickedCell.innerHTML = currentPlayer === 1 ? config.p1 : config.p2;
-    clickedCell.classList.add('taken');
 }
 
 function handleResultValidation() {
     let roundWon = false;
     let winningLine = [];
-
     for (let i = 0; i < winningConditions.length; i++) {
-        const winCondition = winningConditions[i];
-        let a = boardState[winCondition[0]];
-        let b = boardState[winCondition[1]];
-        let c = boardState[winCondition[2]];
-
-        if (a === '' || b === '' || c === '') continue;
-        if (a === b && b === c) {
-            roundWon = true;
-            winningLine = winCondition;
-            break;
+        const [a, b, c] = winningConditions[i];
+        if (boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c]) {
+            roundWon = true; winningLine = [a,b,c]; break;
         }
     }
-
     if (roundWon) {
         statusDisplay.innerHTML = `🎉 Player ${currentPlayer} Wins!`;
-        gameActive = false;
-        highlightWin(winningLine);
-        triggerConfetti(); // Start the rain!
-        return;
+        gameActive = false; highlightWin(winningLine); triggerConfetti(); return;
     }
-
-    let roundDraw = !boardState.includes("");
-    if (roundDraw) {
-        statusDisplay.innerHTML = "It's a Draw! 🤝";
-        gameActive = false;
-        return;
-    }
-
+    if (!boardState.includes("")) { statusDisplay.innerHTML = "It's a Draw! 🤝"; gameActive = false; return; }
     currentPlayer = currentPlayer === 1 ? 2 : 1;
     statusDisplay.innerHTML = `Player ${currentPlayer}'s Turn (${currentPlayer === 1 ? config.p1 : config.p2})`;
 }
 
-function highlightWin(indices) {
-    indices.forEach(index => {
-        document.querySelector(`[data-index='${index}']`).classList.add('win');
-    });
-}
+function highlightWin(indices) { indices.forEach(i => document.querySelector(`[data-index='${i}']`).classList.add('win')); }
 
 function restartGame() {
-    gameActive = true;
-    currentPlayer = 1;
-    boardState = ["", "", "", "", "", "", "", "", ""];
+    gameActive = true; currentPlayer = 1; boardState.fill("");
     statusDisplay.innerHTML = `Player 1's Turn (${config.p1})`;
-    cells.forEach(cell => {
-        cell.innerHTML = "";
-        cell.classList.remove('taken', 'win');
-    });
-    // clear confetti if any remains
+    cells.forEach(c => { c.innerHTML = ""; c.classList.remove('taken', 'win'); });
     confettiContainer.innerHTML = '';
 }
 
-/* --- CUSTOMIZATION & AVATAR GRID LOGIC --- */
-
-function openSettings() {
-    // Reset temp variables to current actual config
-    tempP1 = config.p1;
-    tempP2 = config.p2;
-    
-    renderAvatarGrids(); // Draw the grids
-    modal.style.display = 'flex';
-}
+/* --- CUSTOMIZATION --- */
+function openSettings() { tempP1 = config.p1; tempP2 = config.p2; renderAvatarGrids(); modal.style.display = 'flex'; }
 
 function renderAvatarGrids() {
-    // Helper to generate HTML for a grid
-    function createGrid(targetDiv, currentPlayerValue, otherPlayerValue, isPlayer1) {
-        targetDiv.innerHTML = ''; // Clear existing
-        availableAvatars.forEach(avatar => {
+    const draw = (grid, current, other, isP1) => {
+        grid.innerHTML = '';
+        availableAvatars.forEach(av => {
             const el = document.createElement('div');
-            el.classList.add('avatar-option');
-            el.innerText = avatar;
-
-            // Highlight if selected by THIS player
-            if (avatar === currentPlayerValue) {
-                el.classList.add('selected');
-            }
-
-            // Disable if selected by OTHER player (Validation logic)
-            if (avatar === otherPlayerValue) {
-                el.classList.add('disabled');
-            } else {
-                // Add click event only if not disabled
-                el.onclick = () => {
-                    if (isPlayer1) tempP1 = avatar;
-                    else tempP2 = avatar;
-                    renderAvatarGrids(); // Re-render both grids to update disabled states
-                };
-            }
-            targetDiv.appendChild(el);
+            el.className = `avatar-option ${av === current ? 'selected' : ''} ${av === other ? 'disabled' : ''}`;
+            el.innerText = av;
+            if (av !== other) el.onclick = () => { isP1 ? tempP1 = av : tempP2 = av; renderAvatarGrids(); };
+            grid.appendChild(el);
         });
-    }
-
-    createGrid(p1Grid, tempP1, tempP2, true);
-    createGrid(p2Grid, tempP2, tempP1, false);
+    };
+    draw(p1Grid, tempP1, tempP2, true); draw(p2Grid, tempP2, tempP1, false);
 }
 
-function changeTheme() {
-    const theme = document.getElementById('themeSelect').value;
-    document.body.setAttribute('data-theme', theme);
-}
-
-function saveSettings() {
-    config.p1 = tempP1;
-    config.p2 = tempP2;
-    config.theme = document.getElementById('themeSelect').value;
-    
-    modal.style.display = 'none';
-    restartGame();
-}
+function changeTheme() { document.body.setAttribute('data-theme', document.getElementById('themeSelect').value); }
+function saveSettings() { config.p1 = tempP1; config.p2 = tempP2; config.theme = document.getElementById('themeSelect').value; modal.style.display = 'none'; restartGame(); }
 
 cells.forEach(cell => cell.addEventListener('click', handleCellClick));
 
-/* --- TUTORIAL LOGIC (Updated for new layout) --- */
+/* --- TUTORIAL LOGIC (REVISED) --- */
 let tutorialStep = 0;
 const tutorialOverlay = document.getElementById('tutorialOverlay');
 const tooltip = document.getElementById('tooltip');
@@ -173,7 +82,7 @@ const tooltipText = document.getElementById('tooltipText');
 
 const tutorialSteps = [
     { el: 'game-title', text: "Welcome! Let's get started." },
-    { el: 'board', text: "Click squares to place your mark." },
+    { el: 'board', text: "Click squares to place your mark." }, // Step needing right-positioning
     { el: 'status', text: "Track turns and winners here." },
     { el: 'top-controls', text: "Customize themes and avatars here." },
     { el: 'bottom-controls', text: "Reset the game anytime here." }
@@ -185,6 +94,9 @@ function startTutorial() {
     showStep();
 }
 
+/**
+ * Enhanced showStep to handle dynamic positioning and "Bright" state
+ */
 function showStep() {
     document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
     
@@ -198,49 +110,46 @@ function showStep() {
     target.classList.add('highlight');
     
     const rect = target.getBoundingClientRect();
-    tooltip.style.top = (rect.bottom + 10) + "px";
-    tooltip.style.left = (rect.left + (rect.width/2) - 125) + "px";
-    
-    if(rect.bottom > window.innerHeight - 150) {
-        tooltip.style.top = (rect.top - 120) + "px";
-    }
-    if(parseInt(tooltip.style.left) < 0) tooltip.style.left = "10px";
-
     tooltipText.innerText = step.text;
+
+    // Logic for Step 2: Move instructions to the RIGHT of the board
+    if (step.el === 'board') {
+        tooltip.style.top = (rect.top + (rect.height / 2) - 50) + "px";
+        tooltip.style.left = (rect.right + 20) + "px";
+
+        // Check for mobile overflow (if the screen is too narrow for right-side)
+        if (window.innerWidth < rect.right + 280) {
+            tooltip.style.left = (window.innerWidth / 2 - 130) + "px";
+            tooltip.style.top = (rect.bottom + 10) + "px";
+        }
+    } else {
+        // Standard centering logic for other steps
+        tooltip.style.top = (rect.bottom + 15) + "px";
+        tooltip.style.left = (rect.left + (rect.width / 2) - 130) + "px";
+
+        // Adjust if it goes off bottom
+        if (rect.bottom > window.innerHeight - 150) {
+            tooltip.style.top = (rect.top - 160) + "px";
+        }
+    }
+
+    // Edge case: Prevent left overflow
+    if (parseInt(tooltip.style.left) < 10) tooltip.style.left = "10px";
 }
 
 function nextTutorialStep() { tutorialStep++; showStep(); }
+function endTutorial() { document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight')); tutorialOverlay.style.display = 'none'; }
 
-function endTutorial() {
-    document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
-    tutorialOverlay.style.display = 'none';
-}
-
-/* --- CONFETTI ENGINE --- */
+/* --- CONFETTI --- */
 function triggerConfetti() {
     const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
-    
-    // Create 100 particles
     for (let i = 0; i < 100; i++) {
-        const confetti = document.createElement('div');
-        confetti.classList.add('confetti-piece');
-        
-        // Random properties
-        confetti.style.left = Math.random() * 100 + 'vw';
-        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.animationDuration = (Math.random() * 2 + 2) + 's'; // 2-4 seconds fall
-        confetti.style.animationDelay = (Math.random() * 2) + 's'; // Stagger start times
-        
-        // Add animation styling
-        confetti.style.animationName = 'confettiFall';
-        confetti.style.animationTimingFunction = 'linear';
-        confetti.style.animationFillMode = 'forwards'; // Stay at bottom (or just disappear)
-
-        confettiContainer.appendChild(confetti);
-
-        // Cleanup DOM after animation to prevent memory leaks
-        setTimeout(() => {
-            confetti.remove();
-        }, 5000); 
+        const c = document.createElement('div');
+        c.className = 'confetti-piece';
+        c.style.left = Math.random() * 100 + 'vw';
+        c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        c.style.animation = `confettiFall ${Math.random() * 2 + 2}s linear ${Math.random() * 2}s forwards`;
+        confettiContainer.appendChild(c);
+        setTimeout(() => c.remove(), 5000); 
     }
 }
