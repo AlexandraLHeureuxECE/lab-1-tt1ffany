@@ -1,18 +1,17 @@
-/* --- CSS VARIABLES & THEME DEFINITIONS --- */
-/* Default Light Theme */
+/* --- CSS VARIABLES --- */
 :root {
     --bg-color: #f0f2f5;
     --text-color: #333;
     --board-bg: #ffffff;
     --cell-bg: #e4e6eb;
     --cell-hover: #d0d2d6;
-    --accent: #3b82f6; /* Primary button blue */
-    --win-color: #10b981; /* Green for winning */
+    --accent: #3b82f6; 
+    --win-color: #10b981; 
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Dark Theme Overrides */
+/* Themes (Same as before) */
 [data-theme="dark"] {
     --bg-color: #18191a;
     --text-color: #e4e6eb;
@@ -22,20 +21,16 @@
     --accent: #60a5fa;
     --win-color: #34d399;
 }
-
-/* Neon Cyber Theme Overrides */
 [data-theme="neon"] {
     --bg-color: #000000;
     --text-color: #fff;
     --board-bg: #111;
     --cell-bg: #222;
     --cell-hover: #333;
-    --accent: #ff00ff; /* Hot Pink */
-    --win-color: #00ffff; /* Cyan */
-    --shadow: 0 0 15px rgba(255, 0, 255, 0.5); /* Glowing effect */
+    --accent: #ff00ff; 
+    --win-color: #00ffff; 
+    --shadow: 0 0 15px rgba(255, 0, 255, 0.5);
 }
-
-/* Nature Theme Overrides */
 [data-theme="nature"] {
     --bg-color: #f1f8e9;
     --text-color: #33691e;
@@ -46,11 +41,8 @@
     --win-color: #7cb342;
 }
 
-/* --- GLOBAL STYLES --- */
-* { 
-    box-sizing: border-box; 
-    transition: background 0.3s, color 0.3s; /* Smooth theme transitions */
-}
+/* --- GLOBAL --- */
+* { box-sizing: border-box; transition: background 0.3s, color 0.3s; }
 
 body {
     font-family: var(--font-main);
@@ -60,20 +52,27 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-height: 100vh; /* Ensure full height */
+    min-height: 100vh;
+    overflow-x: hidden; /* Prevent horizontal scroll from confetti */
 }
 
-h1 { 
-    margin-top: 20px; 
-    font-size: 2.5rem; 
-}
+h1 { margin-top: 20px; font-size: 2.5rem; }
 
-/* --- CONTROLS BAR --- */
-.controls {
+/* --- CONTROLS --- */
+/* Top controls container */
+.top-controls {
     display: flex;
     gap: 15px;
     margin-bottom: 20px;
-    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+}
+
+/* Bottom controls container */
+.bottom-controls {
+    margin-top: 30px;
+    margin-bottom: 30px;
+    display: flex;
     justify-content: center;
 }
 
@@ -88,26 +87,18 @@ button {
     font-size: 1rem;
     box-shadow: var(--shadow);
 }
+button:hover { opacity: 0.9; transform: translateY(-1px); }
+button.secondary { background-color: var(--cell-bg); color: var(--text-color); }
+button.restart-btn { font-size: 1.1rem; padding: 12px 25px; }
 
-button:hover { 
-    opacity: 0.9; 
-    transform: translateY(-1px); /* Slight lift on hover */
-}
-
-button.secondary { 
-    background-color: var(--cell-bg); 
-    color: var(--text-color); 
-}
-
-/* --- GAME STATUS TEXT --- */
+/* --- STATUS & BOARD --- */
 #status {
     font-size: 1.5rem;
     margin-bottom: 20px;
     font-weight: bold;
-    height: 30px; /* Prevents layout jump when text changes */
+    height: 30px;
 }
 
-/* --- THE GAME BOARD --- */
 .board {
     display: grid;
     grid-template-columns: repeat(3, 100px);
@@ -117,6 +108,8 @@ button.secondary {
     padding: 15px;
     border-radius: 15px;
     box-shadow: var(--shadow);
+    z-index: 10; /* Ensure board sits above falling confetti */
+    position: relative;
 }
 
 .cell {
@@ -127,24 +120,11 @@ button.secondary {
     align-items: center;
     font-size: 3rem;
     cursor: pointer;
-    user-select: none; /* Prevents text selection on click */
+    user-select: none;
 }
-
-.cell:hover:not(.taken) { 
-    background-color: var(--cell-hover); 
-}
-
-/* Style for cells that have already been played */
-.cell.taken { 
-    cursor: default; 
-}
-
-/* Style for the winning combination */
-.cell.win { 
-    background-color: var(--win-color); 
-    color: white; 
-    animation: pop 0.5s; /* Pop animation */
-}
+.cell:hover:not(.taken) { background-color: var(--cell-hover); }
+.cell.taken { cursor: default; }
+.cell.win { background-color: var(--win-color); color: white; animation: pop 0.5s; }
 
 @keyframes pop {
     0% { transform: scale(0.8); }
@@ -152,12 +132,47 @@ button.secondary {
     100% { transform: scale(1); }
 }
 
-/* --- SETTINGS MODAL --- */
+/* --- AVATAR GRID STYLES (New) --- */
+.avatar-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.avatar-option {
+    background-color: var(--cell-bg);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.2s;
+}
+
+.avatar-option:hover { background-color: var(--cell-hover); }
+
+/* Selected State */
+.avatar-option.selected {
+    border-color: var(--accent);
+    background-color: rgba(0,0,0,0.05);
+    transform: scale(1.1);
+}
+
+/* Disabled State (Used when other player has selected this) */
+.avatar-option.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    filter: grayscale(100%);
+}
+
+/* --- MODAL & TUTORIAL --- */
 .modal {
-    display: none; /* Hidden by default */
+    display: none;
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5); /* Dim background */
+    background: rgba(0,0,0,0.5);
     justify-content: center;
     align-items: center;
     z-index: 100;
@@ -173,51 +188,54 @@ button.secondary {
 }
 .setting-group { margin-bottom: 20px; }
 .setting-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-select, input {
-    padding: 8px;
-    border-radius: 5px;
+select {
+    padding: 8px; border-radius: 5px;
     border: 1px solid var(--cell-hover);
-    width: 100%;
-    background: var(--bg-color);
-    color: var(--text-color);
+    width: 100%; background: var(--bg-color); color: var(--text-color);
 }
 
-/* --- TUTORIAL OVERLAY & HIGHLIGHTS --- */
 .tutorial-overlay {
     display: none;
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
     z-index: 200;
-    background: rgba(0,0,0,0.7); /* Darkens the screen */
+    background: rgba(0,0,0,0.7);
 }
-
-/* Highlighting class used to bring elements 'above' the dark overlay */
 .highlight {
     position: relative;
     z-index: 201;
-    box-shadow: 0 0 0 9999px rgba(0,0,0,0.7); /* The spotlight effect */
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.7);
     background: var(--bg-color); 
     border-radius: 8px;
 }
-
 .tooltip {
     position: absolute;
-    background: white;
-    color: black;
-    padding: 15px;
-    border-radius: 8px;
-    width: 250px;
-    z-index: 202;
-    text-align: center;
+    background: white; color: black;
+    padding: 15px; border-radius: 8px;
+    width: 250px; z-index: 202; text-align: center;
 }
-.tooltip button { margin-top: 10px; font-size: 0.9rem; }
 
-/* --- RESPONSIVE ADJUSTMENTS --- */
-/* For smaller mobile screens */
+/* --- CONFETTI STYLES --- */
+#confetti-container {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; /* Allows clicking buttons underneath */
+    z-index: 50; /* Above text, below modal */
+    overflow: hidden;
+}
+.confetti-piece {
+    position: absolute;
+    width: 10px; height: 10px;
+    background-color: #ffd300;
+    opacity: 0;
+}
+/* Animation for falling confetti */
+@keyframes confettiFall {
+    0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
 @media (max-width: 400px) {
-    .board { 
-        grid-template-columns: repeat(3, 80px); 
-        grid-template-rows: repeat(3, 80px); 
-    }
+    .board { grid-template-columns: repeat(3, 80px); grid-template-rows: repeat(3, 80px); }
     .cell { font-size: 2.5rem; }
 }

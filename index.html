@@ -8,12 +8,13 @@
 </head>
 <body>
 
+    <div id="confetti-container"></div>
+
     <h1 id="game-title">Tic-Tac-Toe</h1>
 
-    <div class="controls" id="controls-area">
-        <button onclick="restartGame()">Restart Game</button>
-        <button class="secondary" onclick="openSettings()">⚙️ Customize</button>
+    <div class="controls top-controls" id="top-controls">
         <button class="secondary" onclick="startTutorial()">❓ How to Play</button>
+        <button class="secondary" onclick="openSettings()">⚙️ Customize</button>
     </div>
 
     <div id="status">Player 1's Turn</div>
@@ -28,6 +29,10 @@
         <div class="cell" data-index="6"></div>
         <div class="cell" data-index="7"></div>
         <div class="cell" data-index="8"></div>
+    </div>
+
+    <div class="controls bottom-controls" id="bottom-controls">
+        <button onclick="restartGame()" class="restart-btn">🔄 Restart Game</button>
     </div>
 
     <div id="settingsModal" class="modal">
@@ -45,13 +50,13 @@
             </div>
 
             <div class="setting-group">
-                <label>Player 1 Avatar (X)</label>
-                <input type="text" id="p1Avatar" value="X" maxlength="2">
+                <label>Player 1 Avatar</label>
+                <div id="p1-avatar-grid" class="avatar-grid"></div>
             </div>
 
             <div class="setting-group">
-                <label>Player 2 Avatar (O)</label>
-                <input type="text" id="p2Avatar" value="O" maxlength="2">
+                <label>Player 2 Avatar</label>
+                <div id="p2-avatar-grid" class="avatar-grid"></div>
             </div>
 
             <button onclick="saveSettings()">Save & Close</button>
